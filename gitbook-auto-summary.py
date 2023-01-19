@@ -7,7 +7,7 @@ import argparse
 import os
 import re
 
-ignore_list = ['README.md']
+ignore_list = []
 
 def output_markdown(dire, base_dir, output_file, append, iter_depth=0):
     """Main iterator for get information from every file/folder
@@ -17,7 +17,6 @@ def output_markdown(dire, base_dir, output_file, append, iter_depth=0):
     p: Judge is directory or is file, then process .md/.markdown files.
     o: write .md information (with identation) to output_file.
     """
-    
     top_list = os.listdir(dire)
     for i in top_list:
        if i in ignore_list:
@@ -25,25 +24,27 @@ def output_markdown(dire, base_dir, output_file, append, iter_depth=0):
 
     for filename in sort_dir_file(top_list, base_dir): 
         # add list and sort
-        print('Processing ', filename) # output log
+#        print('Processing ', filename) # output log
         file_or_path = os.path.join(dire, filename)
         if os.path.isdir(file_or_path): #is dir
             if mdfile_in_dir(file_or_path):
                 # if there is .md files in the folder, output folder name
                 output_file.write('  ' * iter_depth + '- ' + filename + '\n')
+                print('  ' * iter_depth + '- ' + filename + '\n')
                 output_markdown(file_or_path, base_dir, output_file, append, 
                                 iter_depth + 1) # iteration
         else: # is file
-            if is_markdown_file(filename): 
+            if is_markdown_file(dire, base_dir,filename): 
             # re to find target markdown files, $ for matching end of filename
                 if (filename not in ['SUMMARY.md', 
                                      'SUMMARY-GitBook-auto-summary.md'] 
                     or iter_depth != 0): # escape SUMMARY.md at base directory
                     output_file.write('  ' * iter_depth + 
-                        '- [{}]({})\n'.format(write_md_filename(filename, 
+                        '- [{}]({})\n'.format(write_md_filename(dire, base_dir,filename, 
                                                                 append), 
                             os.path.join(os.path.relpath(dire, base_dir), 
                                          filename)))
+                    print('  ' * iter_depth + '- [{}]({})\n'.format(write_md_filename(dire, base_dir,filename, append), os.path.join(os.path.relpath(dire, base_dir),filename)))
                     # iter depth for indent, relpath and join to write link.
 
 def mdfile_in_dir(dire):
@@ -58,19 +59,41 @@ def mdfile_in_dir(dire):
                 return True
     return False
 
-def is_markdown_file(filename):
+
+def markdown_title_name(dire, base_dir,filename):
+    path_filename = os.path.join(os.path.relpath(dire, base_dir), filename)
+    with open(path_filename) as f:
+        firstline = f.readline().rstrip()
+
+    #if not firstline.isalnum():
+    if firstline == '' or firstline == '---':
+      title = filename.split('.',1)[0]
+    else:
+      title = firstline.lower().strip()
+      for i in range(0, len(title)):
+        if not title[i].isalnum():
+           title = title[0:i] + ' ' + title[i+1:]
+      while '--' in title:
+         title = title.replace('--', ' ')
+    title = title.strip(' ')
+    return title
+
+def is_markdown_file(dire, base_dir,filename):
     """ Judge if the filename is a markdown filename
 
     i: filename
     o: filename without '.md' or '.markdown'
     """
-    match = re.search('.md$|.markdown$', filename)
-    if not match:
-        return False
-    elif len(match.group()) is len('.md'):
-        return filename[:-3]
-    elif len(match.group()) is len('.markdown'):
-        return filename[:-9]
+    if (filename not in ['SUMMARY.md','SUMMARY-GitBook-auto-summary.md']):
+        match = re.search('.md$|.markdown$', filename)
+        if not match:
+           return False
+        elif len(match.group()) is len('.md'):
+           md_title = markdown_title_name(dire, base_dir,filename)
+           return md_title
+        elif len(match.group()) is len('.markdown'):
+           md_title = markdown_title_name(dire, base_dir,filename)
+           return md_title
 
 def sort_dir_file(listdir, dire):
     # sort dirs and files, first files a-z, then dirs a-z
@@ -83,9 +106,11 @@ def sort_dir_file(listdir, dire):
             list_of_file.append(filename)
     for dire in list_of_dir:
         list_of_file.append(dire)
+
+    list_of_file=sorted(list_of_file,key=lambda x: list(map(int, re.findall(r'\d+', x))))
     return list_of_file  
 
-def write_md_filename(filename, append):
+def write_md_filename(dire, base_dir,filename, append):
     """ write markdown filename
 
     i: filename and append
@@ -97,10 +122,11 @@ def write_md_filename(filename, append):
             if re.search(filename, line):
                 s = re.search('\[.*\]\(',line)
                 return s.group()[1:-2]
+                
         else:
-            return is_markdown_file(filename)
+            return is_markdown_file(dire, base_dir,filename)
     else:
-        return is_markdown_file(filename)
+        return is_markdown_file(dire, base_dir,filename)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -123,6 +149,7 @@ def main():
         print('--overwrite', end = ' ')
     if append and os.path.exists(os.path.join(dir_input, 'SUMMARY.md')): 
         #append: read former SUMMARY.md
+        print(os.listdir(dir_input))
         print('--append', end = ' ')
         global former_summary_list
         with open(os.path.join(dir_input, 'SUMMARY.md')) as f:
@@ -137,7 +164,7 @@ def main():
     else:
         filename = 'SUMMARY.md'
     output = open(os.path.join(dir_input, filename), 'w')
-    output.write('# 目录\n\n')
+    # output.write('# Summary\n\n')
     output_markdown(dir_input, dir_input, output, append)
 
     print('GitBook auto summary finished:) ')
