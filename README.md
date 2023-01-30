@@ -23,8 +23,9 @@
 
 #### 贡献方式：
 
-1. [Github](https://github.com/SaudM/Game-engine-things) 上提交 Pull Request
+1. [Github](https://github.com/SaudM/Game-engine-things) 上提交 Pull Request 【推荐】
 2. 加入[Gitbook](https://app.gitbook.com/invite/6QpWF9RhvaYyobfH56gh/gdjTnKxabuiRxqq3j8IK) 编辑团队
+3. 投稿：submit2mxh@gmail.com
 
 #### 贡献者：
 

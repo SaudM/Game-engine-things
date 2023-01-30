@@ -7,7 +7,7 @@ import argparse
 import os
 import re
 
-ignore_list = []
+ignore_list = [".git","res-tmp",".gitignore"]
 
 def output_markdown(dire, base_dir, output_file, append, iter_depth=0):
     """Main iterator for get information from every file/folder
